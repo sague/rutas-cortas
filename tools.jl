@@ -1,7 +1,7 @@
 using Plots
 using Graphs
 
-gr(leg=false)
+gr(leg=false, dpi=1, size=(500,500))
 
 function evalPoly(a,xData,x)
     n = length(xData)  # Degree of polynomial
@@ -91,17 +91,12 @@ function rutaMasCorta(incio, fin, mapa, rutaGPS)
         return 1
 end
 
-function main()
-    rows = 50 ; cols = 50
-    
-    #grafo, distancias, nodos = genGridFromFile("/home/jmejia/Documentos/malla.csv")
-    #rows, cols = size(nodos, 1, 2)
+function experimento(rows, cols, ini, fin, puntos)
+    println("Iniciando")    
+
     
     grafo, distancias, nodos = genGrid(rows, cols)
     
-
-    ini = 1
-    fin = rows * cols - 8
     
     index2coor(i) =  [1+div(i, cols), i%rows]
     
@@ -114,20 +109,21 @@ function main()
     nodos[ini] = 1
     nodos[fin] = 1
     
-    p = [5., 23.]
-    p2 = [14., 5.]
+    p  = puntos[1,:]
+    p2 = puntos[2,:]
+
+    # interpilar polinomio con 4 puntos
     data = [inicio';
             p';
             p2';
             destino']
-    println(data)
+    
     xData = data[:,1]
     yData = data[:,2]
-    
-    println("x = ", xData)
-    println("y = ", yData)
+
     
     coef = coeffts(xData,yData)
+    
     rutaGPS(x) = evalPoly(coef, xData, x)
     
     
@@ -140,9 +136,8 @@ function main()
             return round(Int32, d)
     end
     
-    # A*
+    # ruta más corta usando A*
     r = shortest_path(grafo, distancias, ini, fin, h)
-    print(r)
     
     
     nodos[ini] = 2
@@ -153,24 +148,22 @@ function main()
     
  
     @gif for i in r
-   # for i in r
-        try
-        nodos[target(i)]= 3
-        catch
-        end
-    #end
+       # for i in r
+            try
+            nodos[target(i)]= 3
+            catch
+            end
+        #end
     
-    ph = heatmap(nodos)
-    x =1:cols
-    plot!(x, rutaGPS, linewidth=5)
+        ph = heatmap(nodos)
+        x =1:cols
+        plot!(x, rutaGPS, linewidth=5)
    
      end
     
-   #return ph
 
     
 
+    println("Fin")    
     
 end
-
-main()
