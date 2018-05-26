@@ -1,15 +1,16 @@
 using Plots
 using Graphs
 
-gr(leg=false, dpi=1, size=(500,500))
+gr(leg=false, dpi=40, size=(500,500))
 
-function evalPoly(a,xData,x)
+function evalPoly(a::Array{Float64}, xData::Array{Float64}, x::Int)
     n = length(xData)  # Degree of polynomial
     p = a[n]
     for k =1:n-1
         p = a[n-k] + (x -xData[n-k])*p
     end
     return p
+
 end
 
 function coeffts(xData,yData)
@@ -25,31 +26,34 @@ function coeffts(xData,yData)
 end
 
 
-function genGrid(rows, cols, p = 0.8)
-    nodosMatriz = zeros(Int32, rows, cols)
+function genGrid(rows, cols; p = 0.8, M = nothing)
+
+	if M == nothing
+    	M = zeros(rows, cols)
+    	M[ rand(rows, cols) .< p ] = 1
+	end
 
     # crea malla con nombre 1 a r*c
     #srand(543222423)
+
+
     grafo = simple_graph(rows * cols, is_directed = false)
     pesos = []
 
     for i = 1:rows*cols
-        if rand() < p
-            nodosMatriz[i] = 1
+
+        if i > 1 && i%rows != 1 && M[i-1] == 1
+            add_edge!(grafo, i, i-1)
+            push!(pesos, 1 + 10rand())
+        end
+        if i > rows && M[i-cols] == 1
+            add_edge!(grafo, i, i-cols)
+            push!(pesos, 1 + 10rand())
             
-            if i > 1 && i%rows != 1 && nodosMatriz[i-1] == 1
-                add_edge!(grafo, i, i-1)
-                push!(pesos, 1 + 10rand())
-            end
-            if i > rows && nodosMatriz[i-cols] == 1
-                add_edge!(grafo, i, i-cols)
-                push!(pesos, 1 + 10rand())
-                
-            end
         end
     end
         
-    return grafo, round.(Int32, pesos), nodosMatriz
+    return grafo, round.(Int32, pesos), M
 end
 
 function genGridFromFile(fname)
@@ -87,8 +91,14 @@ function recta(x, a, b)
     return m * (x - x1) + y1
 end
 
-function rutaMasCorta(incio, fin, mapa, rutaGPS)
-        return 1
+
+function rutaCortaLocal(matriz, h, inicio, final)
+	rows, cols = size(matriz)
+	grafo, distancias, nodos = genGrid(rows, cols; M = matriz)
+
+	final_local
+
+	return shortest_path(grafo, distancias, inicio, final_local, h)
 end
 
 function experimento(rows, cols, ini, fin, puntos)
@@ -124,46 +134,64 @@ function experimento(rows, cols, ini, fin, puntos)
     
     coef = coeffts(xData,yData)
     
-    rutaGPS(x) = evalPoly(coef, xData, x)
+    rutaGPS(x::Int, coef_::Array{Float64} = coef, xData_::Array{Float64}=xData) = evalPoly(coef_, xData_, x)
     
-    
-    h(t) = begin
-            x, y =index2coor(t)
-            d = norm( [x,y] - [x,rutaGPS(x)])
-            if d > 1
-                d = 1e7d
-            end
-            return round(Int32, d)
+    pol = zeros(Int, rows*cols)
+
+    for i = 1:rows*cols
+    	x = 1 + div(i, cols)
+    	y = i%rows
+        d = abs(y - rutaGPS(x)) #norm( a - [a[1], rutaGPS(a[1])])
+        
+        if d > 1
+        	pol[i] = round(Int, 100000d)        	
+        end
+
     end
     
+    h(t::Int) = pol[t]
+    
+    println("Buscando ruta...")
     # ruta más corta usando A*
-    r = shortest_path(grafo, distancias, ini, fin, h)
+    @time r = shortest_path(grafo, distancias, ini, fin, h)
+    println("Listo ", length(r))
     
     
     nodos[ini] = 2
     nodos[fin] = 2
     
-
     
     
  
-    @gif for i in r
-       # for i in r
+    # @gif for i in r
+       for i in r
             try
-            nodos[target(i)]= 3
+            nodos[target(i)]= 3 # color
             catch
             end
-        #end
+        end
     
         ph = heatmap(nodos)
         x =1:cols
         plot!(x, rutaGPS, linewidth=5)
    
-     end
-    
-
-    
-
-    println("Fin")    
+     # end
     
 end
+
+function test()
+
+	rows = 20
+	cols = 20
+
+	ini = 1
+	fin = rows * cols - 8
+	puntos = [
+	     5.0  23.0;
+	    14.0   5.0
+	]
+
+	experimento(rows, cols, ini, fin, puntos)
+end
+
+test()
