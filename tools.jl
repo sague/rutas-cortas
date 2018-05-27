@@ -91,16 +91,6 @@ function recta(x, a, b)
     return m * (x - x1) + y1
 end
 
-
-function rutaCortaLocal(matriz, h, inicio, final)
-	rows, cols = size(matriz)
-	grafo, distancias, nodos = genGrid(rows, cols; M = matriz)
-
-	final_local
-
-	return shortest_path(grafo, distancias, inicio, final_local, h)
-end
-
 function experimento(rows, cols, ini, fin, puntos)
     println("Iniciando")    
 
@@ -193,5 +183,3 @@ function test()
 
 	experimento(rows, cols, ini, fin, puntos)
 end
-
-test()
